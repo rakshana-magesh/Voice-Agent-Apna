@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Anna, a voice vocabulary tutor built with Vapi by Rakshana M.">
+<title>Talk to Anna: The Vocabulary Tutor | Rakshana M</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; justify-content: center;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a; color: #f8fafc; text-align: center; padding: 40px 24px;
+  }
+  .card { max-width: 520px; margin: auto; }
+  h1 { font-size: 2rem; margin: 0 0 12px; }
+  p { color: #cbd5e1; line-height: 1.6; margin: 0 0 24px; }
+  ol { text-align: left; color: #cbd5e1; line-height: 1.8; margin: 0 auto 32px; max-width: 360px; }
+  button {
+    font-size: 1.1rem; font-weight: 600; padding: 16px 36px; border: 0; border-radius: 999px;
+    background: #22c55e; color: #052e16; cursor: pointer; transition: transform .15s, background .15s;
+  }
+  button:hover { transform: scale(1.04); }
+  button.live { background: #ef4444; color: #fff; }
+  button:disabled { background: #475569; color: #cbd5e1; cursor: wait; transform: none; }
+  #status { margin-top: 16px; font-size: .95rem; color: #94a3b8; min-height: 1.4em; }
+  .note { margin-top: 40px; font-size: .85rem; color: #64748b; }
+  .about {
+    margin-top: 36px; padding: 22px 24px; text-align: left;
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+  }
+  .about h2 { font-size: 1.1rem; margin: 0 0 12px; color: #f8fafc; }
+  .about p { font-size: .95rem; margin: 0 0 12px; }
+  .about p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Talk to Anna: The Vocabulary Tutor</h1>
+    <p>A live AI voice assistant built by Rakshana. Have a real conversation with it, right in your browser.</p>
+
+    <ol>
+      <li>Click <strong>Start Call</strong> below</li>
+      <li>Allow microphone access when prompted</li>
+      <li>Just start talking</li>
+    </ol>
+
+    <button id="callBtn">Start Call</button>
+    <div id="status"></div>
+
+    <p class="note">Best in Chrome, in a quiet space or with headphones.</p>
+
+    <section class="about">
+      <h2>About this prototype</h2>
+      <p>Anna is a voice vocabulary tutor I built with Vapi for Apna’s application process. I used HTML to embed the live agent and hosted it on GitHub Pages.</p>
+      <p>She’s teach-first: she introduces one word, gives an example, asks you to use it in your own sentence, coaches your answer, and brings words you struggled with back two turns later.</p>
+      <p>I added strict scope and safety guardrails, so she declines off-topic and unsafe requests, and I tuned response speed after noticing long pauses.</p>
+    </section>
+  </div>
+
+  <script type="module">
+    import Vapi from "https://esm.sh/@vapi-ai/web";
+
+    const PUBLIC_KEY = "bb31645f-b82f-47b6-afe4-577889b8f5fe";   // public key only, never the private key
+    const ASSISTANT_ID = "d3cc55a0-7f5f-45a5-a068-7963ab9479f5";
+
+    const vapi = new Vapi(PUBLIC_KEY);
+    const btn = document.getElementById("callBtn");
+    const status = document.getElementById("status");
+    let inCall = false;
+
+    const setState = (label, cls = "", disabled = false, msg = "") => {
+      btn.textContent = label;
+      btn.className = cls;
+      btn.disabled = disabled;
+      status.textContent = msg;
+    };
+
+    btn.addEventListener("click", () => {
+      if (inCall) {
+        vapi.stop();
+      } else {
+        setState("Connecting...", "", true, "Allow microphone access if your browser asks.");
+        vapi.start(ASSISTANT_ID);
+      }
+    });
+
+    vapi.on("call-start", () => {
+      inCall = true;
+      setState("End Call", "live", false, "Connected. Go ahead and say hello!");
+    });
+    vapi.on("call-end", () => {
+      inCall = false;
+      setState("Start Call", "", false, "Call ended. Click to talk again.");
+    });
+    vapi.on("speech-start", () => { status.textContent = "Assistant is speaking..."; });
+    vapi.on("speech-end", () => { if (inCall) status.textContent = "Your turn to talk."; });
+    vapi.on("error", (e) => {
+      console.error(e);
+      inCall = false;
+      setState("Start Call", "", false, "Something went wrong. Please refresh and try again.");
+    });
+  </script>
+</body>
+</html>
